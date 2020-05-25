@@ -27,7 +27,8 @@
     "symfony/config": "^3.4",
     "symfony/dependency-injection": "^3.4",
     "vlucas/phpdotenv": "^3.4",
-    "webmozart/assert": "^1.0"
+    "webmozart/assert": "^1.0",
+    "prestashop/prestashop-accounts-auth": "dev-feature/790-extract-library-from-ps_accounts"
   },
   "require-dev": {
     "phpunit/phpunit": "~5.7",

@@ -138,11 +138,14 @@ class Ps_checkout extends PaymentModule
      */
     public function install()
     {
+        $webhookHelper = new PrestaShop\AccountsAuth\Wrapper\Webhook();
+
         // Install for both 1.7 and 1.6
         $defaultInstall = parent::install() &&
             (new PrestaShop\Module\PrestashopCheckout\ShopUuidManager())->generateForAllShops() &&
             $this->installConfiguration() &&
             $this->registerHook(self::HOOK_LIST) &&
+            $webhookHelper->ensureWebhookRegistered($this) &&
             (new PrestaShop\Module\PrestashopCheckout\OrderStates())->installPaypalStates() &&
             (new PrestaShop\Module\PrestashopCheckout\Database\TableManager())->createTable() &&
             $this->installTabs();
@@ -361,8 +364,14 @@ class Ps_checkout extends PaymentModule
 
     public function getContent()
     {
+        $webhookHelper = new PrestaShop\AccountsAuth\Wrapper\Webhook();
+        $webhookHelper->ensureWebhookRegistered($this);
+
         $paypalAccount = new PrestaShop\Module\PrestashopCheckout\Repository\PaypalAccountRepository();
         $psAccount = new PrestaShop\Module\PrestashopCheckout\Repository\PsAccountRepository();
+
+        // Accounts presenter
+        $onboarding = new PrestaShop\AccountsAuth\Wrapper\Onboarding();
 
         // update merchant status only if the merchant onboarding is completed
         if ($paypalAccount->onbardingIsCompleted()
@@ -377,6 +386,7 @@ class Ps_checkout extends PaymentModule
 
         Media::addJsDef([
             'store' => (new PrestaShop\Module\PrestashopCheckout\Presenter\Store\StorePresenter($this, $this->context))->present(),
+            'store_accounts' => $onboarding->present(),
         ]);
 
         return $this->display(__FILE__, '/views/templates/admin/configuration.tpl');
@@ -1079,5 +1089,24 @@ class Ps_checkout extends PaymentModule
         }
 
         return $this->container->get($serviceName);
+    }
+
+    public function hookReceiveWebhook_ps_checkout(array $params)
+    {
+        $headers = $params['headers'];
+        $body = $params['body'];
+        $correlationId = $headers['correlationId'];
+        $action = $body['action'];
+        $data = $body['data'];
+
+        switch ($action) {
+            case 'my-action':
+                // TODO
+                return '';
+            default:
+                return 'Action unknown';
+        }
+
+        return ''; // empty string '' if succeed; or an error message string if failed.
     }
 }
